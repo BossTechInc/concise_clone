@@ -4,6 +4,7 @@ import 'package:concise_clone/screens/Home%20Screens/Entertainment.dart';
 import 'package:concise_clone/screens/Home%20Screens/Finance.dart';
 import 'package:concise_clone/screens/Home%20Screens/Health.dart';
 import 'package:concise_clone/screens/Home%20Screens/InternationalAffairs.dart';
+import 'package:concise_clone/screens/Home%20Screens/Live%20News/live_news.dart';
 import 'package:concise_clone/screens/Home%20Screens/Politics.dart';
 import 'package:concise_clone/screens/Home%20Screens/Sports.dart';
 import 'package:concise_clone/screens/Home%20Screens/Tech&Science.dart';
@@ -12,11 +13,17 @@ import 'package:concise_clone/screens/Loading%20Screen/splash.dart';
 import 'package:concise_clone/screens/Loading%20Screen/tabs_screen.dart';
 import 'package:concise_clone/widgets/web_view.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:overlay_support/overlay_support.dart';
 
+
+Future<void> backgroundHandler(RemoteMessage message) async{
+  print(message.data.toString());
+  print(message.notification!.title);
+}
 
 void main()async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +35,8 @@ Provider.debugCheckInvalidValueType = null;
       (SystemUiOverlayStyle(
         statusBarColor: Color(0xff1d425d), // transparent status bar
       )));
+  FirebaseMessaging.onBackgroundMessage(backgroundHandler);
+
 }
 
 class MyApp extends StatelessWidget {
@@ -52,6 +61,7 @@ class MyApp extends StatelessWidget {
             body: SplashScreen(),
           ),
           routes: {
+            'liveNews':(ctx)=>LiveNews(),
             Web.routeName:(ctx)=>Web(),
             AppDrawer.routeName:(ctx)=>AppDrawer(),
             Entertainment.routeName:(ctx)=>Entertainment(),

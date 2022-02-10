@@ -1,5 +1,7 @@
 
+import 'package:concise_clone/providers/local_notifications_service.dart';
 import 'package:concise_clone/screens/Loading%20Screen/tabs_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,6 +14,33 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
+    super.initState();
+    LocalNotificationService.initialize(context);
+
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        final routeFromMessage = message.data['route'];
+      }
+    });
+
+// foreground
+
+    FirebaseMessaging.onMessage.listen((message) {
+      print(message.notification!.body);
+      print(message.notification!.title);
+
+      LocalNotificationService.display(message);
+    });
+
+//   when app is is background
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      final routeFromMessage = message.data["route"] as int;
+      print(routeFromMessage);
+
+   Navigator.of(context).pushNamed('/tabs', arguments: routeFromMessage); //arguments: routeFromMessage == null ? 0 : routeFromMessage);
+    });
+
     super.initState();
     _navigateTab();
   }

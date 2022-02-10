@@ -1,4 +1,5 @@
 import 'package:concise_clone/models/push_notification_model.dart';
+import 'package:concise_clone/providers/local_notifications_service.dart';
 import 'package:concise_clone/screens/Home%20Screens/Entertainment.dart';
 import 'package:concise_clone/screens/Home%20Screens/Finance.dart';
 import 'package:concise_clone/screens/Home%20Screens/Health.dart';
@@ -28,102 +29,54 @@ class TabsScreen extends StatefulWidget {
 class _TabsScreenState extends State<TabsScreen> {
   var subscription;
   var connectionStatus;
-
-  late final FirebaseMessaging _messaging;
-
-  PushNotication? _notificationInfo;
-  var now = DateTime.now();
-
-  void registerNotification() async {
-    _messaging = FirebaseMessaging.instance;
-    await Firebase.initializeApp();
-
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      provisional: false,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-    //  print("User granted permission");
-
-      FirebaseMessaging.onMessage.listen(
-        (RemoteMessage message) {
-          PushNotication notification = PushNotication(
-            message.notification!.title as String,
-            message.notification!.body as String,
-          );
-          setState(() {
-            _notificationInfo = notification;
-          });
-
-          if (notification != null) {
-            showSimpleNotification(
-              Text(_notificationInfo!.title),
-              leading: NotificationBadge(),
-              subtitle: Text(_notificationInfo!.body),
-              background: Colors.cyan.shade700,
-              duration: const Duration(seconds: 2),
-            );
-          }
-        },
-      );
-    } else {
-     // print("permission denied");
-    }
-  }
-
-  checkForInitialMessage() async {
-    await Firebase.initializeApp();
-    RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      PushNotication notification = PushNotication(
-        initialMessage.notification!.title as String,
-        initialMessage.notification!.body as String,
-      );
-
-      setState(() {
-        _notificationInfo = notification;
-      });
-    }
-  }
+  String? routeData;
+ 
 
   @override
   void initState() {
-    subscription = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      setState(() => connectionStatus = result);
-      checkInternetConnectivity();
+    LocalNotificationService.initialize(context);
+
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if(message != null){
+        final routeFromMessage = message.data['route'];
+      }
     });
 
-//   when app is is background
+// foreground 
 
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      PushNotication notification = PushNotication(
-        message.notification!.title as String,
-        message.notification!.body as String,
-      );
-      setState(() {
-        _notificationInfo = notification;
-      });
-    });
 
-// normal notification in foreground state i.e app is running
+  FirebaseMessaging.onMessage.listen((message){
+    // print(message.notification!.body);
+    // print(message.notification!.title);
 
-    registerNotification();
 
-// when app is in terminated state
+    LocalNotificationService.display(message);
 
-    checkForInitialMessage();
+
+  });
+
+  
+//   when app is is background 
+
+  FirebaseMessaging.onMessageOpenedApp.listen((message){
+     
+     final String routeFromMessage = message.data["route"] ;
+   setState(() {
+      routeData = routeFromMessage;
+   }); 
+  //  print(routeFromMessage);
+
+   Navigator.of(context).pushNamed("/tabs", arguments: routeData );
+   print(routeData); //arguments: routeFromMessage == null ? 0 : routeFromMessage);
+
+  });
+
+  
 
     super.initState();
   }
-
-  int selectedPageIndex = 0;
+int selectedPageIndex = 0;
+  
   final ScrollController _controller = ScrollController();
 
   final double _height = 100.0;
@@ -163,7 +116,7 @@ class _TabsScreenState extends State<TabsScreen> {
     );
   }
 
-  final PageController _pageController = PageController(initialPage: 0);
+ 
 
   checkInternetConnectivity() {
     if (connectionStatus == ConnectivityResult.none) {
@@ -184,7 +137,19 @@ class _TabsScreenState extends State<TabsScreen> {
   }
 
   @override
+
+  
   Widget build(BuildContext context) {
+    String arguments ="";
+
+    if(ModalRoute.of(context)!.settings.arguments  == null){
+       arguments = "0";
+      }else{
+        arguments = ModalRoute.of(context)!.settings.arguments as String ;
+      }
+    
+     final PageController _pageController = PageController(initialPage: arguments.isEmpty ? 0 : arguments as int ) ;
+
     return Scaffold(
       body: SafeArea(
         child: NestedScrollView(
@@ -228,9 +193,11 @@ class _TabsScreenState extends State<TabsScreen> {
                 margin: const EdgeInsets.all(15),
                 child: PageView(
                   controller: _pageController,
+                  
                   onPageChanged: (newIndex) {
                     setState(() {
                       _animateToIndex(newIndex);
+                      print(_pageController.initialPage);
                       selectedPageIndex = newIndex;
                     });
                   },
